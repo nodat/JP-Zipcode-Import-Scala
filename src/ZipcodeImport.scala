@@ -9,7 +9,7 @@ import org.scalaquery.ql.extended.MySQLDriver.Implicit._
 import org.scalaquery.simple.StaticQuery
 
 import scala.io.Source
-import scala.util.control.Exception._    
+import scala.util.control.Exception._	
 
 import java.io._
 import java.net.URL
@@ -52,14 +52,14 @@ import jp.sourceforge.csvparser._
  * 14: 変更理由　(「0」は変更なし、「1」市政・区政・町政・分区・政令指定都市施行、「2」住居表示の実施、「3」区画整理、「4」郵便区調整等、「5」訂正、「6」廃止(廃止データのみ使用))
  */
 case class Zipcode(val areaCode:String,
-    val oldZipcode:String,
-    val zipcode:String,
-    val prefKana:String,
-    val cityKana:String,
-    val townKana:String,
-    val pref:String,
-    val city:String,
-    val town:String)
+	val oldZipcode:String,
+	val zipcode:String,
+	val prefKana:String,
+	val cityKana:String,
+	val townKana:String,
+	val pref:String,
+	val city:String,
+	val town:String)
 /**
  * zipcode data model  
  */
@@ -95,30 +95,30 @@ object ZipcodeImport {
 	 * @param args arguments args(0): application property filename
 	 */
 	def doProcess(args:Array[String]):Unit = {
-	    // 設定ファイルを取得
+		// 設定ファイルを取得
 		val properties = args(0)
 		val p = loadProperties(properties)
 		// URLからファイルをダウンロード
-	    val filename = downloadFile(p.getProperty("url"), p.getProperty("workDir"))
-	    // ダウンロードしたファイルを解凍
-	    val extractFileList = extractFile(filename)
+		val filename = downloadFile(p.getProperty("url"), p.getProperty("workDir"))
+		// ダウンロードしたファイルを解凍
+		val extractFileList = extractFile(filename)
 		// テーブルを作成
 		val dburl 	 = p.getProperty("dburl")
 		val driver 	 = p.getProperty("driver")
 		val user 	 = p.getProperty("user")
 		val password = p.getProperty("password")
 		val db = Database.forURL(dburl, driver = driver, user = user, password = password)
-	    
-	    // ファイルを読み込み、レコード作成
-	    extractFileList.fold(
-	        e => { 
-	        	printf("Error: %s", e)
-	        }, 
-	        fileList => {
-	        	// DB 更新
-	        	updateZipcodeTable(db, fileList)
-	        })
-	    // 終了
+		
+		// ファイルを読み込み、レコード作成
+		extractFileList.fold(
+			e => { 
+				printf("Error: %s", e)
+			}, 
+			fileList => {
+				// DB 更新
+				updateZipcodeTable(db, fileList)
+			})
+		// 終了
 	}
 	
 	/**
@@ -132,10 +132,10 @@ object ZipcodeImport {
 		val filename:String = path + File.separator + new File(urlObject.getFile()).getName()
 		// URL を開いて指定されたパスにファイルに書き出す
 		using(urlObject.openStream()) { stream =>
-	    	IOUtils.copy(stream, new FileOutputStream(filename)) 
-	    }
+			IOUtils.copy(stream, new FileOutputStream(filename)) 
+		}
 		printf("downloaded: %s\n", filename)
-	    return filename
+		return filename
 	}
 
 	/**
@@ -146,17 +146,17 @@ object ZipcodeImport {
 	def extractFile(target:String):Throwable Either ArrayList[String] = {
 		// 解凍ファイルのディレクトリ情報を整理
 		val targetPath = new File(target).getParentFile()
-	    val baseDirName = new File(target).getName()
-	    val baseDirPath = targetPath
-	    
-	    // 作業ディレクトリの作成
+		val baseDirName = new File(target).getName()
+		val baseDirPath = targetPath
+		
+		// 作業ディレクトリの作成
 		if (!baseDirPath.isDirectory()) {
 			baseDirPath.mkdir()
 		}
 	
 		// 解凍処理
 		var extractFileList:ArrayList[String] = new ArrayList[String]()
-	    allCatch either {
+		allCatch either {
 			val lis = new LhaInputStream(new BufferedInputStream(new FileInputStream(new File(target))))
 			using(lis) { ls =>
 			  	// 候補となるファイル・ディレクトリを分別
@@ -175,7 +175,7 @@ object ZipcodeImport {
 				})
 			}
 			extractFileList
-	    }
+		}
 	}
 	
 	/**
@@ -186,23 +186,23 @@ object ZipcodeImport {
 		// 既存レコードのzipcodeキーを取得
 		var currentTable = new HashSet[String]()
 		db withSession { implicit s:Session =>
-		    for (zipcode <- ZipcodeDao.findAll) {
+			for (zipcode <- ZipcodeDao.findAll) {
 		  		currentTable.add(zipcode)
-		    }
+			}
 		}
 	  
 		// 対象ファイルを１つずつ処理
-	    val listIterator = filelist.iterator();
-	    while (listIterator.hasNext()) {
-	    	val filename = listIterator.next()
-	    	printf("loading: %s\n", filename)
-	    	
-	    	// CSV ファイルを読み出し
-	    	val utility = new BasicCSVUtility()	
-	    	val reader = utility.createCSVReader(new BufferedReader(new InputStreamReader(new FileInputStream(new File(filename)), encoding)))
-	    	var skip = new SkipState()
+		val listIterator = filelist.iterator();
+		while (listIterator.hasNext()) {
+			val filename = listIterator.next()
+			printf("loading: %s\n", filename)
+			
+			// CSV ファイルを読み出し
+			val utility = new BasicCSVUtility()	
+			val reader = utility.createCSVReader(new BufferedReader(new InputStreamReader(new FileInputStream(new File(filename)), encoding)))
+			var skip = new SkipState()
 
-	    	// データを整理＆絞り込み処理
+			// データを整理＆絞り込み処理
 			val lines = Iterator.continually(reader.readRecord()).takeWhile(_ != null)
 			lines.filter(line => {
 				_normalize(line, skip)
